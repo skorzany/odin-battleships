@@ -1,0 +1,4 @@
+.eslintrc.js
+# Ignore artifacts:
+build
+coverage
