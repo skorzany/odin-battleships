@@ -3,8 +3,8 @@ import Gameboard from './gameboard.js';
 const randomIntInRange = (max) => Math.floor(Math.random() * max);
 
 describe('Gameboard', () => {
-  const emptyBoard = new Gameboard();
   describe('instantiation', () => {
+    const emptyBoard = new Gameboard();
     const [randomX, randomY] = [randomIntInRange(10), randomIntInRange(10)];
     const randomRow = emptyBoard.board[randomX];
 
@@ -31,117 +31,241 @@ describe('Gameboard', () => {
   });
 
   describe('.placeShip', () => {
-    const placementTestingBoard = new Gameboard();
+    const testingBoard = new Gameboard();
+    const carrier = { horizontal: true, length: 5, row: 2, col: 3 };
+    const destroyer = { horizontal: true, length: 3, row: 9, col: 7 };
+    const battleship = { horizontal: false, length: 4, row: 4, col: 2 };
+    const submarine = { horizontal: false, length: 3, row: 2, col: 0 };
 
     test('throws on invalid ship size', () => {
-      const [x, y] = [0, 0];
-      const badLength = -3;
       expect(() => {
-        placementTestingBoard.placeShip([x, y], badLength);
+        testingBoard.placeShip({
+          row: 0,
+          col: 0,
+          length: -3,
+          horizontal: true,
+        });
       }).toThrow();
     });
 
     test('places horizontal ships', () => {
-      const [x, y] = [3, 4];
-      const hLength = 5;
-      placementTestingBoard.placeShip([x, y], hLength, true);
+      testingBoard.placeShip(carrier);
+      testingBoard.placeShip(destroyer);
       /* expected board state:
          _ _ _ _ _ _ _ _ _ _
          _ _ _ _ _ _ _ _ _ _
-         _ _ _ _ _ _ _ _ _ _
-         _ _ _ _ h h h h h _
-         _ _ _ _ _ _ _ _ _ _
+         _ _ _ C C C C C _ _
          _ _ _ _ _ _ _ _ _ _
          _ _ _ _ _ _ _ _ _ _
          _ _ _ _ _ _ _ _ _ _
          _ _ _ _ _ _ _ _ _ _
          _ _ _ _ _ _ _ _ _ _
+         _ _ _ _ _ _ _ _ _ _
+         _ _ _ _ _ _ _ D D D
        */
-      for (let i = y; i < y + hLength; i += 1) {
-        expect(placementTestingBoard.board[x][i]).not.toBe(null);
-        expect(placementTestingBoard.board[x][i].constructor.name).toBe('Ship');
-      }
+      const carrierRow = testingBoard.board[carrier.row];
+      expect(carrierRow).toEqual([
+        null,
+        null,
+        null,
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        null,
+        null,
+      ]);
+
+      const destroyerRow = testingBoard.board[destroyer.row];
+      expect(destroyerRow).toEqual([
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        expect.objectContaining({ hits: 0, length: destroyer.length }),
+        expect.objectContaining({ hits: 0, length: destroyer.length }),
+        expect.objectContaining({ hits: 0, length: destroyer.length }),
+      ]);
     });
 
     test('places vertical ships', () => {
-      const [x, y] = [5, 2];
-      const vLength = 4;
-      placementTestingBoard.placeShip([x, y], vLength, false);
+      testingBoard.placeShip(battleship);
+      testingBoard.placeShip(submarine);
       /* expected board state:
          _ _ _ _ _ _ _ _ _ _
          _ _ _ _ _ _ _ _ _ _
+         S _ _ C C C C C _ _
+         S _ _ _ _ _ _ _ _ _
+         S _ B _ _ _ _ _ _ _
+         _ _ B _ _ _ _ _ _ _
+         _ _ B _ _ _ _ _ _ _
+         _ _ B _ _ _ _ _ _ _
          _ _ _ _ _ _ _ _ _ _
-         _ _ _ _ h h h h h _
-         _ _ _ _ _ _ _ _ _ _
-         _ _ v _ _ _ _ _ _ _
-         _ _ v _ _ _ _ _ _ _
-         _ _ v _ _ _ _ _ _ _
-         _ _ v _ _ _ _ _ _ _
-         _ _ _ _ _ _ _ _ _ _
+         _ _ _ _ _ _ _ D D D
        */
-      for (let i = x; i < x + vLength; i += 1) {
-        expect(placementTestingBoard.board[i][y]).not.toBe(null);
-        expect(placementTestingBoard.board[i][y].constructor.name).toBe('Ship');
-      }
+      const battleshipCol = [];
+      for (let n = 0; n < testingBoard.board.length; n += 1)
+        battleshipCol.push(testingBoard.board[n][battleship.col]);
+      expect(battleshipCol).toEqual([
+        null,
+        null,
+        null,
+        null,
+        expect.objectContaining({ hits: 0, length: battleship.length }),
+        expect.objectContaining({ hits: 0, length: battleship.length }),
+        expect.objectContaining({ hits: 0, length: battleship.length }),
+        expect.objectContaining({ hits: 0, length: battleship.length }),
+        null,
+        null,
+      ]);
+
+      const battleshipRow = testingBoard.board[battleship.row];
+      expect(battleshipRow).toEqual([
+        expect.objectContaining({ hits: 0, length: submarine.length }),
+        null,
+        expect.objectContaining({ hits: 0, length: battleship.length }),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]);
+
+      const submarineCol = [];
+      for (let n = 0; n < testingBoard.board.length; n += 1)
+        submarineCol.push(testingBoard.board[n][submarine.col]);
+      expect(submarineCol).toEqual([
+        null,
+        null,
+        expect.objectContaining({ hits: 0, length: submarine.length }),
+        expect.objectContaining({ hits: 0, length: submarine.length }),
+        expect.objectContaining({ hits: 0, length: submarine.length }),
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]);
+
+      const submarineRow = testingBoard.board[submarine.row];
+      expect(submarineRow).toEqual([
+        expect.objectContaining({ hits: 0, length: submarine.length }),
+        null,
+        null,
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        expect.objectContaining({ hits: 0, length: carrier.length }),
+        null,
+        null,
+      ]);
     });
 
     describe('collisions', () => {
-      const frozenBoardState = structuredClone(placementTestingBoard); // expect it to stay as-is
-
+      const presetBoard = new Gameboard();
+      [carrier, destroyer, battleship, submarine].forEach((data) =>
+        presetBoard.placeShip(data)
+      );
+      /* presetBoard state, should remain UNCHANGED during all collision tests:
+         _ _ _ _ _ _ _ _ _ _
+         _ _ _ _ _ _ _ _ _ _
+         S _ _ C C C C C _ _
+         S _ _ _ _ _ _ _ _ _
+         S _ B _ _ _ _ _ _ _
+         _ _ B _ _ _ _ _ _ _
+         _ _ B _ _ _ _ _ _ _
+         _ _ B _ _ _ _ _ _ _
+         _ _ _ _ _ _ _ _ _ _
+         _ _ _ _ _ _ _ D D D
+       */
+      const expectedBoard = [];
+      presetBoard.board.forEach((row) => expectedBoard.push([...row]));
       describe('areas out of bounds', () => {
-        test('horizontal out of bounds', () => {
-          const [x, y] = [0, 8]; // top right corner left-to-right
-          const badHLength = 4;
-          placementTestingBoard.placeShip([x, y], badHLength, true);
-          expect(placementTestingBoard).toEqual(frozenBoardState);
+        test('handles horizontal out-of-bounds', () => {
+          const bad1 = { horizontal: true, length: 2, row: 0, col: 9 };
+          presetBoard.placeShip(bad1);
+          expect(presetBoard.board).toEqual(expectedBoard);
         });
-
-        test('vertical out of bounds', () => {
-          const [x, y] = [8, 0]; // bottom left corner top-to-down
-          const badVLength = 3;
-          placementTestingBoard.placeShip([x, y], badVLength, false);
-          expect(placementTestingBoard).toEqual(frozenBoardState);
+        test('handles vertical out-of-bounds', () => {
+          const bad2 = { horizontal: false, length: 2, row: 9, col: 0 };
+          presetBoard.placeShip(bad2);
+          expect(presetBoard.board).toEqual(expectedBoard);
         });
       });
-
-      describe('areas already occupied', () => {
-        test('handles ship overlapping', () => {
-          const L = 3;
-          const badHorizontalStartCases = [
-            [3, 2],
-            [3, 7],
-            [5, 0],
-            [6, 1],
-            [7, 2],
+      describe('areas already occupied/unavailable', () => {
+        test('handles horizontally overlapping ships', () => {
+          const overlappingHorizontalStarts = [
+            [2, 2], // would overlap the carrier from the left side
+            [2, 7], // would overlap the carrier from the right side
+            [2, 0], // would overlap the submarine from top-right
+            [7, 1], // would overlap the battleship from bottom-left
+            [9, 7], // would be entirely on top of the destroyer
           ];
-          const badVerticalStartCases = [
-            [1, 4],
-            [2, 6],
-            [3, 8],
-            [3, 2],
-            [7, 2],
+          overlappingHorizontalStarts.forEach(([row, col]) => {
+            presetBoard.placeShip({ row, col, length: 2, horizontal: true });
+          });
+          expect(presetBoard.board).toEqual(expectedBoard);
+        });
+        test('handles vertically overlapping ships', () => {
+          const overlappingVerticalStarts = [
+            [1, 3], // would overlap the carrier from the top-left
+            [2, 7], // would overlap the carrier from the bottom-right
+            [3, 2], // would overlap the battleship from the top
+            [7, 2], // would overlap the battleship from the bottom
+            [2, 0], // would be entirely on top of the submarine
           ];
-
-          badHorizontalStartCases.forEach((coords) => {
-            placementTestingBoard.placeShip(coords, L, true);
+          overlappingVerticalStarts.forEach(([row, col]) => {
+            presetBoard.placeShip({ row, col, length: 2, horizontal: false });
           });
-          expect(placementTestingBoard).toEqual(frozenBoardState);
-
-          badVerticalStartCases.forEach((coords) => {
-            placementTestingBoard.placeShip(coords, L, false);
-          });
-          expect(placementTestingBoard).toEqual(frozenBoardState);
+          expect(presetBoard.board).toEqual(expectedBoard);
         });
 
-        test('handles gaps between ships', () => {});
-
-        test('prevents overwriting occupied slots', () => {});
+        test('handles gaps between ships', () => {
+          // According to the modern rules of the game, ships cannot 'touch' each other
+          const gapViolatingHorizontalStarts = [
+            [8, 8], // would be directly above the destroyer
+            [9, 5], // would be directly to the left of the destroyer
+            [2, 8], // would be directly to the right of the carrier
+            [3, 4], // would be directly under the carrier
+            [8, 3], // would touch the bottom-right corner of the battleship
+            [1, 1], // would touch top-right corner of the submarine & top-left corner of the carrier
+          ];
+          const gapViolatingVerticalStarts = [
+            [0, 0], // would be directly above the submarine
+            [8, 2], // would be directly under the battleship
+            [5, 3], // would be right next to the battleship
+            [3, 1], // would be squeezed between the submarine and the battleship
+            [7, 6], // would touch the top-left corner of the destroyer
+            [0, 8], // would touch the top-right corner of the carrier
+          ];
+          gapViolatingHorizontalStarts.forEach(([row, col]) =>
+            presetBoard.placeShip({ row, col, horizontal: true, length: 2 })
+          );
+          gapViolatingVerticalStarts.forEach(([row, col]) =>
+            presetBoard.placeShip({ row, col, horizontal: false, length: 2 })
+          );
+          expect(presetBoard.board).toEqual(expectedBoard);
+        });
       });
     });
   });
 
   describe('.receive attack', () => {
-    test('keeps track of missed shots', () => {});
-    test('reports whether or not all ships have been sunk', () => {});
+    test('registers missed shots', () => {});
+    test('registers hits', () => {});
+  });
+
+  describe('.hasShips', () => {
+    test('empty board', () => {});
+    test('all ships are alive', () => {});
+    test('some ships are alive', () => {});
+    test('all ships are sunk', () => {});
   });
 });
