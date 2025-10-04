@@ -23,5 +23,6 @@ module.exports = {
   },
   rules: {
     'prettier/prettier': ['error'],
+    'no-underscore-dangle': ['off'],
   },
 };
