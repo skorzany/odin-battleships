@@ -1,16 +1,18 @@
 import Ship from './ship.js';
 
-export default class Gameboard {
-  // PUBLIC INTERFACE START
+export default class GameBoard {
   constructor() {
+    this.shotRegistry = new Set();
     this.board = [];
     for (let n = 0; n < 10; n += 1) this.board.push(new Array(10).fill(null));
   }
 
   placeShip({ row, col, length, horizontal }) {
     const ship = new Ship(length);
-    const areaIsEmpty = this._validateArea({ row, col, length, horizontal });
-    if (areaIsEmpty) {
+    ship.horizontal = horizontal;
+    ship.code = `${row}${col}`;
+    const areaToCheck = this._generateAreaMap(ship);
+    if (GameBoard.allEmpty(areaToCheck)) {
       if (horizontal && col + length <= 10)
         for (let i = col; i < col + length; i += 1) this.board[row][i] = ship;
       else if (!horizontal && row + length <= 10)
@@ -18,12 +20,26 @@ export default class Gameboard {
     }
   }
 
-  receiveAttack() {}
+  receiveAttack({ row, col }) {
+    const codeInFocus = `${row}${col}`;
+    if (!this.shotRegistry.has(codeInFocus)) {
+      this.shotRegistry.add(codeInFocus);
+      const ship = this.board[row][col];
+      if (ship !== null) {
+        ship.hit();
+        if (ship.isSunk()) {
+          const codesToRegister = Object.keys(this._generateAreaMap(ship));
+          codesToRegister.forEach((code) => this.shotRegistry.add(code));
+        }
+      }
+    }
+  }
 
   hasShips() {}
-  // PUBLIC INTERFACE END
 
-  _validateArea({ row, col, length, horizontal }) {
+  // PRIVATE METHODS
+  _generateAreaMap({ code, length, horizontal }) {
+    const [row, col] = [...code].map(Number);
     const [areaStartRowIdx, areaEndRowIdx] = [
       Math.max(row - 1, 0),
       horizontal ? Math.min(row + 1, 9) : Math.min(row + length, 9),
@@ -32,11 +48,15 @@ export default class Gameboard {
       Math.max(col - 1, 0),
       horizontal ? Math.min(col + length, 9) : Math.min(col + 1, 9),
     ];
-
+    const areaMap = {};
     for (let i = areaStartRowIdx; i <= areaEndRowIdx; i += 1) {
-      const cells = this.board[i].slice(areaStartColIdx, areaEndColIdx + 1);
-      if (cells.some((cell) => cell !== null)) return false;
+      for (let j = areaStartColIdx; j <= areaEndColIdx; j += 1)
+        areaMap[`${i}${j}`] = this.board[i][j] === null;
     }
-    return true;
+    return areaMap;
+  }
+
+  static allEmpty(areaMap) {
+    return Object.values(areaMap).every((value) => value === true);
   }
 }
