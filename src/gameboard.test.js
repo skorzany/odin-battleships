@@ -8,14 +8,23 @@ describe('GameBoard', () => {
     const [randomX, randomY] = [randomIntInRange(10), randomIntInRange(10)];
     const randomRow = emptyBoard.board[randomX];
 
+    test('has required properties', () => {
+      const properties = ['board', 'shipMap', 'shotRegistry'];
+      properties.forEach((property) =>
+        expect(emptyBoard).toHaveProperty(property)
+      );
+    });
+
     test('has expected type', () => {
-      expect(Array.isArray(emptyBoard.board)).toBe(true);
-      expect(Array.isArray(randomRow)).toBe(true);
+      expect(emptyBoard.board).toBeInstanceOf(Array);
+      expect(randomRow).toBeInstanceOf(Array);
+      expect(emptyBoard.shipMap).toBeInstanceOf(Object);
+      expect(emptyBoard.shotRegistry).toBeInstanceOf(Set);
     });
 
     test('has expected size', () => {
-      expect(emptyBoard.board.length).toBe(10);
-      expect(randomRow.length).toBe(10);
+      expect(emptyBoard.board).toHaveLength(10);
+      expect(randomRow).toHaveLength(10);
     });
 
     test('has required methods', () => {
@@ -27,6 +36,8 @@ describe('GameBoard', () => {
     test('new board is empty', () => {
       expect(randomRow).toEqual(new Array(10).fill(null));
       expect(emptyBoard.board[randomX][randomY]).toBe(null);
+      expect(Object.entries(emptyBoard.shipMap)).toHaveLength(0);
+      expect(emptyBoard.shotRegistry.size).toBe(0);
     });
   });
 
@@ -409,9 +420,56 @@ describe('GameBoard', () => {
   });
 
   describe('.hasShips', () => {
-    test('empty board', () => {});
-    test('all ships are alive', () => {});
-    test('some ships are alive', () => {});
-    test('all ships are sunk', () => {});
+    describe('fresh, clean board', () => {
+      const fresh = new GameBoard();
+
+      test('has no ships', () => {
+        expect(fresh.hasShips()).toBe(false);
+      });
+    });
+
+    describe('full board', () => {
+      const fullBoard = new GameBoard();
+      const ships = [
+        { horizontal: true, length: 5, row: 2, col: 3 }, // Carrier
+        { horizontal: true, length: 3, row: 9, col: 7 }, // Destroyer
+        { horizontal: false, length: 4, row: 4, col: 2 }, // Battleship
+        { horizontal: false, length: 3, row: 2, col: 0 }, // Submarine
+        { horizontal: true, length: 2, row: 6, col: 4 }, // PatrolBoat
+      ];
+      ships.forEach((shipData) => fullBoard.placeShip(shipData)); // same layout as in previous scenarios
+
+      test('first round/all ships are untouched)', () => {
+        expect(fullBoard.hasShips()).toBe(true);
+      });
+
+      test('some, but not all ships are sunk', () => {
+        const hits = [
+          [2, 3],
+          [2, 4],
+          [2, 5],
+          [2, 6],
+          [2, 7], // Carrier
+          [2, 0],
+          [3, 0],
+          [4, 0], // Submarine
+          [4, 2],
+          [5, 2],
+          [6, 2],
+          [7, 2], // Battleship
+          [9, 7],
+          [9, 8],
+          [9, 9], // Destroyer
+        ];
+        hits.forEach(([row, col]) => fullBoard.receiveAttack({ row, col }));
+        expect(fullBoard.hasShips()).toBe(true);
+      });
+
+      test('all ships are sunk', () => {
+        fullBoard.receiveAttack({ row: 6, col: 4 });
+        fullBoard.receiveAttack({ row: 6, col: 5 }); // sinking the last ship (PatrolBoat)
+        expect(fullBoard.hasShips()).toBe(false);
+      });
+    });
   });
 });

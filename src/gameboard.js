@@ -3,6 +3,7 @@ import Ship from './ship.js';
 export default class GameBoard {
   constructor() {
     this.shotRegistry = new Set();
+    this.shipMap = {};
     this.board = [];
     for (let n = 0; n < 10; n += 1) this.board.push(new Array(10).fill(null));
   }
@@ -13,10 +14,13 @@ export default class GameBoard {
     ship.code = `${row}${col}`;
     const areaToCheck = this._generateAreaMap(ship);
     if (GameBoard.allEmpty(areaToCheck)) {
-      if (horizontal && col + length <= 10)
+      if (horizontal && col + length <= 10) {
         for (let i = col; i < col + length; i += 1) this.board[row][i] = ship;
-      else if (!horizontal && row + length <= 10)
+        this.shipMap[length] = { ship };
+      } else if (!horizontal && row + length <= 10) {
         for (let i = row; i < row + length; i += 1) this.board[i][col] = ship;
+        this.shipMap[length] = { ship };
+      }
     }
   }
 
@@ -24,18 +28,22 @@ export default class GameBoard {
     const codeInFocus = `${row}${col}`;
     if (!this.shotRegistry.has(codeInFocus)) {
       this.shotRegistry.add(codeInFocus);
-      const ship = this.board[row][col];
-      if (ship !== null) {
-        ship.hit();
-        if (ship.isSunk()) {
-          const codesToRegister = Object.keys(this._generateAreaMap(ship));
+      const target = this.board[row][col];
+      if (target !== null) {
+        target.hit();
+        if (target.isSunk()) {
+          const codesToRegister = Object.keys(this._generateAreaMap(target));
           codesToRegister.forEach((code) => this.shotRegistry.add(code));
         }
       }
     }
   }
 
-  hasShips() {}
+  hasShips() {
+    const shipData = Object.values(this.shipMap);
+    if (shipData.some((data) => data.ship.isSunk() === false)) return true;
+    return false;
+  }
 
   // PRIVATE METHODS
   _generateAreaMap({ code, length, horizontal }) {
