@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import Ship from './ship.js';
-=======
 import Ship from './ship';
->>>>>>> 56d961e (Add the Ship class & its unit tests)
 
 describe('Ship', () => {
   let testShip;
