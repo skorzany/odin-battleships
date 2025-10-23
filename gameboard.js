@@ -24,6 +24,16 @@ export default class GameBoard {
     }
   }
 
+  undoLastShip() {
+    if (this.placedShips.length) {
+      const ship = this.placedShips.pop();
+      ship.areaCodes.forEach((code) => {
+        const [row, col] = code.split('').map(Number);
+        this.board[row][col] = null;
+      });
+    }
+  }
+
   receiveAttack({ row, col }) {
     const codeInFocus = `${row}${col}`;
     if (!this.shotRegistry.has(codeInFocus)) {
