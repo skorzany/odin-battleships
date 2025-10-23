@@ -9,10 +9,17 @@ describe('GameBoard', () => {
     const randomRow = emptyBoard.board[randomX];
 
     test('has required properties', () => {
-      const properties = ['board', 'shipMap', 'shotRegistry'];
-      properties.forEach((property) =>
-        expect(emptyBoard).toHaveProperty(property)
-      );
+      const properties = ['board', 'placedShips', 'shotRegistry'];
+      properties.forEach((property) => {
+        expect(testBoard).toHaveProperty(property);
+      });
+    });
+
+    test('has required methods', () => {
+      expect(testBoard).toHaveProperty('placeShip', expect.any(Function));
+      expect(testBoard).toHaveProperty('undoLastShip', expect.any(Function));
+      expect(testBoard).toHaveProperty('receiveAttack', expect.any(Function));
+      expect(testBoard).toHaveProperty('hasShips', expect.any(Function));
     });
 
     test('has expected type', () => {
@@ -281,94 +288,454 @@ describe('GameBoard', () => {
         });
       });
     });
-  });
+    describe('.undoLastShip()', () => {
+      describe('empty board/single ship', () => {
+        beforeEach(() => {
+          testBoard = new GameBoard();
+        });
+        test('handles empty board', () => {
+          const spy = jest.spyOn(testBoard.placedShips, 'pop');
+          testBoard.undoLastShip();
+          expect(spy).not.toHaveBeenCalled();
+          spy.mockRestore();
+        });
 
-  describe('.receive attack', () => {
-    const fullBoard = new GameBoard();
-    const ships = [
-      { horizontal: true, length: 5, row: 2, col: 3 }, // (C)arrier
-      { horizontal: true, length: 3, row: 9, col: 7 }, // (D)estroyer
-      { horizontal: false, length: 4, row: 4, col: 2 }, // (B)attleship
-      { horizontal: false, length: 3, row: 2, col: 0 }, // (S)ubmarine
-      { horizontal: true, length: 2, row: 6, col: 4 }, // (P)atrolBoat
-    ];
-    ships.forEach((shipData) => fullBoard.placeShip(shipData));
-    const expectedRegistry = new Set([
-      '00',
-      '09',
-      '33',
-      '41',
-      '63',
-      '85',
-      '20',
-      '24',
-      '42',
-      '64',
-      '99',
-      '23',
-      '30',
-      '97',
-      '40',
-      '10',
-      '11',
-      '21',
-      '31',
-      '50',
-      '51',
-      '65',
-      '66',
-      '53',
-      '54',
-      '55',
-      '56',
-      '73',
-      '74',
-      '75',
-      '76',
-      '98',
-      '96',
-      '86',
-      '87',
-      '88',
-      '89',
-    ]);
-    /* fullBoard state:
-        _ _ _ _ _ _ _ _ _ _
-        _ _ _ _ _ _ _ _ _ _
-        S _ _ C C C C C _ _
-        S _ _ _ _ _ _ _ _ _
-        S _ B _ _ _ _ _ _ _
-        _ _ B _ _ _ _ _ _ _
-        _ _ B _ P P _ _ _ _
-        _ _ B _ _ _ _ _ _ _
-        _ _ _ _ _ _ _ _ _ _
-        _ _ _ _ _ _ _ D D D
-      */
-    test('registers missed shots', () => {
-      const misses = [
-        [0, 0],
-        [0, 9],
-        [3, 3],
-        [4, 1],
-        [6, 3],
-        [8, 5],
-      ];
-      misses.forEach(([row, col]) => fullBoard.receiveAttack({ row, col }));
-      expect(fullBoard.shotRegistry.isSubsetOf(expectedRegistry)).toBe(true);
+        test('handles one random ship', () => {
+          const emptyBoard = [];
+          for (let i = 0; i < 10; i += 1) {
+            const emptyRow = new Array(10).fill(null);
+            emptyBoard.push(emptyRow);
+          }
+          const randomShip =
+            Object.values(ships)[
+              Math.floor(Math.random() * Object.values(ships).length)
+            ];
+          testBoard.placeShip(randomShip);
+          const spy = jest.spyOn(testBoard.placedShips, 'pop');
+          testBoard.undoLastShip();
+          expect(spy).toHaveBeenCalledTimes(1);
+          expect(testBoard.placedShips).toHaveLength(0);
+          expect(testBoard.board).toEqual(emptyBoard);
+          spy.mockRestore();
+        });
+      });
+      describe('full board', () => {
+        beforeAll(() => {
+          testBoard = new GameBoard();
+        });
+        beforeEach(() => {
+          //   expected board state:
+          //   _ _ _ _ _ _ _ _ _ _
+          //   _ _ _ _ _ _ _ _ _ _
+          //   S _ _ C C C C C _ _
+          //   S _ _ _ _ _ _ _ _ _
+          //   S _ B _ _ _ _ _ _ _
+          //   _ _ B _ _ _ _ _ _ _
+          //   _ _ B _ P P _ _ _ _
+          //   _ _ B _ _ _ _ _ _ _
+          //   _ _ _ _ _ _ _ _ _ _
+          //   _ _ _ _ _ _ _ D D D
+          testBoard.board = [
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              doubles.submarine,
+              null,
+              null,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              null,
+              null,
+            ],
+            [
+              doubles.submarine,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              doubles.submarine,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              doubles.patrolBoat,
+              doubles.patrolBoat,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              doubles.destroyer,
+              doubles.destroyer,
+              doubles.destroyer,
+            ],
+          ];
+        });
+        test('one ship removed', () => {
+          const placementOrder = [
+            doubles.carrier,
+            doubles.battleship,
+            doubles.patrolBoat,
+            doubles.destroyer,
+            doubles.submarine,
+          ];
+          testBoard.placedShips = placementOrder;
+          testBoard.undoLastShip();
+          expect(testBoard.placedShips).toEqual([
+            doubles.carrier,
+            doubles.battleship,
+            doubles.patrolBoat,
+            doubles.destroyer,
+          ]);
+          expect(testBoard.board).toEqual([
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              null,
+              null,
+              null,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              null,
+              null,
+            ],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              doubles.patrolBoat,
+              doubles.patrolBoat,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              doubles.destroyer,
+              doubles.destroyer,
+              doubles.destroyer,
+            ],
+          ]);
+        });
+
+        test('two ships removed', () => {
+          const placementOrder = [
+            doubles.battleship,
+            doubles.submarine,
+            doubles.carrier,
+            doubles.patrolBoat,
+            doubles.destroyer,
+          ];
+          testBoard.placedShips = placementOrder;
+          testBoard.undoLastShip();
+          testBoard.undoLastShip();
+          expect(testBoard.placedShips).toEqual([
+            doubles.battleship,
+            doubles.submarine,
+            doubles.carrier,
+          ]);
+          expect(testBoard.board).toEqual([
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              doubles.submarine,
+              null,
+              null,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              doubles.carrier,
+              null,
+              null,
+            ],
+            [
+              doubles.submarine,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              doubles.submarine,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              null,
+              null,
+              doubles.battleship,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+          ]);
+        });
+
+        test('three ships removed', () => {
+          const placementOrder = [
+            doubles.submarine,
+            doubles.destroyer,
+            doubles.patrolBoat,
+            doubles.battleship,
+            doubles.carrier,
+          ];
+          testBoard.placedShips = placementOrder;
+          testBoard.undoLastShip();
+          testBoard.undoLastShip();
+          testBoard.undoLastShip();
+          expect(testBoard.placedShips).toEqual([
+            doubles.submarine,
+            doubles.destroyer,
+          ]);
+          expect(testBoard.board).toEqual([
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              doubles.submarine,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              doubles.submarine,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [
+              doubles.submarine,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+            ],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              doubles.destroyer,
+              doubles.destroyer,
+              doubles.destroyer,
+            ],
+          ]);
+        });
+
+        test('four ships removed', () => {
+          const placementOrder = [
+            doubles.destroyer,
+            doubles.patrolBoat,
+            doubles.carrier,
+            doubles.submarine,
+            doubles.battleship,
+          ];
+          testBoard.placedShips = placementOrder;
+          testBoard.undoLastShip();
+          testBoard.undoLastShip();
+          testBoard.undoLastShip();
+          testBoard.undoLastShip();
+          expect(testBoard.placedShips).toEqual([doubles.destroyer]);
+          expect(testBoard.board).toEqual([
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [null, null, null, null, null, null, null, null, null, null],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              doubles.destroyer,
+              doubles.destroyer,
+              doubles.destroyer,
+            ],
+          ]);
+        });
+      });
     });
-
-    test('registers hits', () => {
-      const hits = [
-        [2, 0], // Submarine 1st hit
-        [2, 4], // Carrier 1st hit
-        [4, 2], // Battleship
-        [6, 4], // PatrolBoat 1st hit
-        [9, 9], // Destroyer 1st hit
-      ];
-      hits.forEach(([row, col]) => {
-        fullBoard.receiveAttack({ row, col });
-        const ship = fullBoard.board[row][col];
-        expect(ship.hits).toBe(1);
+    describe('.receiveAttack()', () => {
+      let expectedRegistry;
+      beforeAll(() => {
+        testBoard = new GameBoard();
+        Object.values(ships).forEach((ship) => testBoard.placeShip(ship));
       });
       expect(fullBoard.shotRegistry.isSubsetOf(expectedRegistry)).toBe(true);
       const moreHits = [
