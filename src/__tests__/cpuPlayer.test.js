@@ -1,6 +1,6 @@
-import CpuPlayer from './cpuPlayer';
-import Player from './player';
-import GameBoard from './gameboard';
+import CpuPlayer from '../cpuPlayer';
+import Player from '../player';
+import GameBoard from '../gameboard';
 
 describe('cpuPlayer', () => {
   let testPlayer;
