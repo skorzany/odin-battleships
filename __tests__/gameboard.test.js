@@ -1,4 +1,4 @@
-import GameBoard from './gameboard';
+import GameBoard from '../gameboard';
 
 const randomIntInRange = (max) => Math.floor(Math.random() * max);
 
